@@ -20,5 +20,5 @@ import (
 	"embed"
 )
 
-//go:embed contentconfiguration.yaml providermetadata.yaml rbac.yaml
+//go:embed apiexport-kbind-provider.platform-mesh.io.yaml apiresourceschema-connectedclusters.kbind-provider.platform-mesh.io.yaml contentconfiguration.yaml providermetadata.yaml rbac.yaml
 var FS embed.FS

@@ -1,11 +1,9 @@
 # PlatformMesh Demo
 
-End-to-end demo path: bootstrap the provider workspace, build and load the provider images into kind, and deploy the backend + portal via Helm. The backend runs in-cluster (not via `go run`), so this exercises the same images and charts used in a real deployment.
+End-to-end demo: deploy the kbind provider, stand up a consumer cluster, and bind a provider's APIs to it.
 
 For pure code iteration without rebuilding images, see [DEVELOPMENT.md](DEVELOPMENT.md).
-For just the image build and Helm reference, see [DEPLOYMENT.md](DEPLOYMENT.md).
-
-We will be using 
+For the full image build and Helm reference, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 1. Get the PlatformMesh Kubeconfig
 
@@ -16,103 +14,25 @@ kind export kubeconfig --name platform-mesh --kubeconfig compute.kubeconfig
 export COMPUTE_KUBECONFIG="$(realpath compute.kubeconfig)"
 ```
 
-## 2. Bootstrap Provider Resources
+## 2. Deploy the kbind Provider
 
-Create the provider workspace hierarchy:
-
-```bash
-KUBECONFIG=$PM_KUBECONFIG kubectl ws use :
-KUBECONFIG=$PM_KUBECONFIG kubectl ws create providers --type=root:providers --enter --ignore-existing
-KUBECONFIG=$PM_KUBECONFIG kubectl ws create kube-bind --type=root:provider --enter --ignore-existing
-```
-
-Seed kube-bind + platform-mesh.io assets into the provider workspace. The `--host-override` flag stamps the externally-reachable kcp hostname into the generated kubeconfig. We use `https://root.kcp.localhost:8443` because:
-
-- It is the SNI hostname the platform-mesh Istio gateway routes to the kcp root shard (`kcp-root-shard-tlsroute` in the `infra` chart). In this single-shard kind setup all workspaces live on the root shard, so path-based routing (`/clusters/<id>/...`) resolves correctly through it.
-- It is resolvable **inside** the provider cluster via the backend pod's `hostAliases` (mapped to the frontproxy ClusterIP — see [deploy/helm/backend-values.yaml](../deploy/helm/backend-values.yaml)).
-- It is resolvable **from a consumer kind cluster** by adding a `hostAlias` to the konnector pod pointing `root.kcp.localhost` at the host-gateway IP — the same trick contrib-examples uses for the api-syncagent (`contrib-examples/msp-postgres-localsetup/hack/syncagent-install.sh`).
-
-`https://localhost:8443` (the front-proxy TLSRoute hostname) does not work for consumer pods, because `localhost` already resolves to the pod itself and cannot be overridden via `hostAliases`.
+Follow [DEPLOYMENT.md](DEPLOYMENT.md) to build and deploy the operator and portal into the
+platform-mesh cluster. Once done, confirm the pods are healthy:
 
 ```bash
-go run cmd/init/main.go --kcp-kubeconfig $PM_KUBECONFIG \
-  --host-override=https://frontproxy-front-proxy.platform-mesh-system:8443
+kubectl get pods -n kbind-system \
+  -l 'app.kubernetes.io/name in (kbind-provider-operator,kbind-provider-portal)'
 ```
 
-Extract the generated backend kubeconfig:
+## 3. Create a Consumer Kind Cluster
+
+The platform-mesh kind cluster is the **provider** (runs kcp + the kbind operator + portal).
+To exercise the full bind flow we need a second cluster — the **consumer** — where the kbind
+konnector will run and where bound APIs become available.
 
 ```bash
-KUBECONFIG=$PM_KUBECONFIG kubectl get secret kube-bind-backend-kubeconfig -n default -o jsonpath='{.data.kubeconfig}' | base64 -d > backend.kubeconfig
-```
-
-## 3. Build and Load Images into Kind
-
-TODO: Replace with pre-built images once the tags are available.
-
-```bash
-export IMAGE_TAG=platform-mesh
-make images kind-load-all IMAGE_TAG=$IMAGE_TAG
-```
-
-## 4. Run Helm Charts
-
-Create the kubeconfig secret the backend will mount:
-
-```bash
-kubectl create namespace kube-bind-system
-kubectl delete secret kube-bind-provider-kubeconfig -n kube-bind-system --ignore-not-found
-kubectl create secret generic kube-bind-provider-kubeconfig \
-  --from-file=kubeconfig=backend.kubeconfig \
-  -n kube-bind-system
-```
-
-Install the backend. Bootstrap was done out-of-cluster in step 2, so no init container is needed here. `backend.image.tag` is the upstream backend tag — separate from `$IMAGE_TAG` which controls the provider-init/portal images built by `make images`.
-
-```bash
-helm upgrade --install kube-bind-backend \
-  oci://ghcr.io/kube-bind/charts/backend \
-  --version 0.8.1 \
-  -f deploy/helm/backend-values.yaml \
-  -n kube-bind-system \
-  --set 'backend.image.repository=ghcr.io/kube-bind/backend' \
-  --set 'backend.image.tag=0.0.0-dfa3d5c84db3988a14fa8b27a8fedc9b6dd1c49e' \
-  --set 'backend.image.pullPolicy=Always'
-```
-
-Install the portal:
-
-```bash
-make helm-deps
-
-helm upgrade --install kube-bind-portal \
-  deploy/helm/kube-bind-portal \
-  -n kube-bind-system \
-  --set image.tag=$IMAGE_TAG \
-  --set httpRoute.enabled=true \
-  --set middleware.enabled=true
-```
-
-Once the pods are healthy, exercise the portal with the sample resources from [DEVELOPMENT.md § Testing the Portal with Sample Resources](DEVELOPMENT.md#testing-the-portal-with-sample-resources).
-
-
-# Check 
-
-```
-kubectl get pods -n kube-bind-system 
-NAME                                 READY   STATUS    RESTARTS   AGE
-kube-bind-backend-6786c7dc48-p6q7x   1/1     Running   0          114s
-kube-bind-portal-d66c5557c-sz8kp     0/1     Running   0          5s
-```
-
-## 5. Create a Consumer Kind Cluster
-
-The platform-mesh kind cluster is the **provider** (runs kcp + the kube-bind backend + portal). To exercise the full bind flow we need a second, separate cluster — the **consumer** — where the konnector will run and where bound APIs become available.
-
-Create the consumer cluster:
-
-```bash
-kind create cluster --name kube-bind-consumer
-kind export kubeconfig --name kube-bind-consumer --kubeconfig consumer.kubeconfig
+kind create cluster --name kbind-consumer
+kind export kubeconfig --name kbind-consumer --kubeconfig consumer.kubeconfig
 export CONSUMER_KUBECONFIG="$(realpath consumer.kubeconfig)"
 ```
 
@@ -122,77 +42,103 @@ Confirm it is up:
 KUBECONFIG=$CONSUMER_KUBECONFIG kubectl get nodes
 ```
 
+> **TODO:** Add instructions for deploying the kbind konnector (`ghcr.io/kbind-dev/konnector`)
+> via its Helm chart onto the consumer cluster.
+
 ### Networking note: resolving `root.kcp.localhost` from the consumer
 
-The kubeconfigs handed out by the provider's portal point at `https://root.kcp.localhost:8443`. Both kind clusters share the default `kind` docker network, and the platform-mesh kind cluster publishes 8443 on host loopback. The consumer's konnector reaches kcp by:
+The kubeconfigs handed out by the provider's portal point at `https://root.kcp.localhost:8443`.
+Both kind clusters share the default `kind` docker network, and the platform-mesh kind cluster
+publishes 8443 on host loopback. The consumer's konnector reaches kcp by:
 
-1. Resolving `root.kcp.localhost` inside the konnector pod to the host-gateway IP (the IP `host.docker.internal` resolves to from inside the kind node). This must be set via `hostAliases` on the konnector deployment, because the name is not in any real DNS.
+1. Resolving `root.kcp.localhost` inside the konnector pod to the host-gateway IP (the IP
+   `host.docker.internal` resolves to from inside the kind node). This must be set via
+   `hostAliases` on the konnector deployment, because the name is not in any real DNS.
 2. The kind node forwards that to the host's published `127.0.0.1:8443`.
-3. The platform-mesh Istio gateway accepts the TLS handshake, routes by SNI `root.kcp.localhost` (`kcp-root-shard-tlsroute` in the `infra` chart), and lands on the root shard, which serves the workspace path embedded in the kubeconfig.
+3. The platform-mesh Istio gateway accepts the TLS handshake, routes by SNI `root.kcp.localhost`
+   (`kcp-root-shard-tlsroute` in the `infra` chart), and lands on the root shard, which serves
+   the workspace path embedded in the kubeconfig.
 
-Resolve the host-gateway IP dynamically from inside the consumer kind node and apply it as a `hostAlias` to the konnector deployment after `kubectl bind` installs it. The exact pattern is in `contrib-examples/msp-postgres-localsetup/hack/syncagent-install.sh` — same network topology, same SNI hostname, same trick.
+No extra kind-network configuration is needed beyond keeping both clusters on the default `kind`
+docker network.
 
-No extra kind-network configuration is needed beyond keeping both clusters on the default `kind` docker network.
+## 4. Deploy the Wildwest Provider
 
-## 6. Bind APIs via the Portal UI
-
-Steps you will need to do in the platform-mesh portal:
-
-1. Get the consumer cluster identity with `kubectl bind cluster-identity` and create a `BindingRequest`. Wait until the status is `Success`.
-2. Click on it and "Copy binding file and deploy", then apply the copied YAML to the consumer cluster (`kubectl apply -f - --kubeconfig $CONSUMER_KUBECONFIG`).
-3. This will deploy the konnector. IMPORTANT: before the konnector becomes ready, patch the Deployment to add a `hostAlias` for `root.kcp.localhost`:
-
-```bash 
-# Resolve host-gateway IP from inside the consumer kind control-plane node.
-CONSUMER_NODE=kube-bind-consumer-control-plane
-HOSTGW_IP=$(docker exec "$CONSUMER_NODE" getent ahostsv4 host.docker.internal | awk 'NR==1 {print $1}')
-echo "host-gateway IP for consumer pods: $HOSTGW_IP"
-
-# Patch the konnector Deployment to resolve root.kcp.localhost -> host-gateway IP.
-KUBECONFIG=$CONSUMER_KUBECONFIG kubectl -n kube-bind patch deployment konnector \
-  --type=strategic \
-  -p "$(cat <<EOF
-spec:
-  template:
-    spec:
-      hostAliases:
-        - ip: "$HOSTGW_IP"
-          hostnames:
-            - root.kcp.localhost
-EOF
-)"
-
-# Wait for the rollout.
-KUBECONFIG=$CONSUMER_KUBECONFIG kubectl -n kube-bind rollout status deployment/konnector
-```
-
-4. Once this works, you should see `ClusterBinding` `Ready` in the cluster-binding window. Click on it, copy the `APIServiceBindingBundle`, and apply it to the consumer cluster. This tells kube-bind that you agree to pull every API contract from the provider (platform-mesh) and bind it to the consumer cluster.
-
-These are one-time steps to establish trust and connectivity between the provider and consumer clusters. After this, any APIs the provider exposes and the consumer subscribes to will be automatically pushed and become available in the consumer cluster without needing to repeat these steps.
-
-5. In the `ServiceMappings` page you should now see one API available for your platform-mesh account — `postgresql.cnpg.io-postgresql.cnpg.io-jln62`. Click `+` and `Create Export Request`. This instructs kube-bind to push the contract to the consumer cluster.
-
-6. In the `Active Bindings` page, you should see one Active Binding per cluster. This confirms the external consumer is now linked to the platform-mesh account.
-
-On the consumer cluster:
-```bash
-KUBECONFIG=$CONSUMER_KUBECONFIG kubectl get crd | grep postgresql.cnpg.io 
-clusters.postgresql.cnpg.io             2026-06-01T12:23:22Z       
-```
-
-If you create an object in the consumer cluster:
+With the consumer cluster running, deploy the
+[`platform-mesh/provider-quickstart`](https://github.com/platform-mesh/provider-quickstart)
+wildwest provider — a ready-made example provider that exports a `Cowboys` API:
 
 ```bash
-KUBECONFIG=$CONSUMER_KUBECONFIG kubectl apply -f - <<EOF
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: my-postgres-cluster
-spec:
-  instances: 1
-  storage:
-    size: 1Gi
-EOF
+kubectl apply -k https://github.com/platform-mesh/provider-quickstart/config/platfrom-mesh-ocm
 ```
 
-then in the UI, with "All namespaces" selected on the Postgres tab, you should see the new resource synced back from the consumer cluster.
+This applies the wildwest `ManagedProvider` to the platform-mesh cluster. The
+platform-mesh-operator drives the full lifecycle:
+
+1. Creates a kcp `Provider` (dedicated workspace + scoped admin kubeconfig).
+2. Copies the kubeconfig into `platform-mesh-system` as `wildwest-provider-kubeconfig`.
+3. Installs the wildwest-controller and wildwest-portal Helm charts via Flux.
+   The controller's init container bootstraps the `Cowboys` APIExport, APIResourceSchema,
+   and ProviderMetadata into the provider workspace before the controller starts.
+
+Monitor progress:
+
+```bash
+kubectl get managedprovider wildwest -n platform-mesh-system -w
+kubectl get pods -n platform-mesh-system \
+  -l 'app.kubernetes.io/name in (wildwest-controller,wildwest-portal)'
+```
+
+## 5. Connect the Consumer Cluster
+
+### Bind the providers
+
+In the platform-mesh portal, bind both the `wildwest.platform-mesh.io` and
+`kbind-provider.platform-mesh.io` APIExports to the consumer's kcp workspace. This makes the
+Cowboys API and the kbind connection machinery available in that workspace.
+
+### Generate a kbind bundle
+
+Open the **kbind portal** and click **+ Add connection**:
+
+1. Enter a **Bundle name** (e.g. `bobs-wildwest`).
+2. Choose the API scope:
+   - **All APIs** — the bundle covers every API exported by the provider.
+   - **Select specific APIs** — pick individual APIs from the list.
+3. Click **Generate bundle**. The portal assembles a YAML bundle containing:
+   - a `Secret` with the provider kubeconfig,
+   - a `Connection` referencing that Secret,
+   - a `ClusterBinding` (only when specific APIs are selected).
+4. Click **Copy** to copy the bundle YAML to the clipboard.
+5. Click **Save connection** to close the dialog and record the `ConnectedCluster` on the
+   provider side.
+
+### Apply the bundle to the consumer cluster
+
+Paste the copied YAML and apply it:
+
+```bash
+kubectl apply -f - --kubeconfig $CONSUMER_KUBECONFIG
+# (paste bundle, then Ctrl-D)
+```
+
+### Verify the connection
+
+On the **consumer cluster**, confirm the `Connection` is ready:
+
+```bash
+KUBECONFIG=$CONSUMER_KUBECONFIG kubectl get connections.core.kbind.io
+NAME            READY   SECRET          AGE
+bobs-wildwest   True    bobs-wildwest   10s
+```
+
+On the **kcp provider side** (inside the user's workspace), confirm the `ConnectedCluster`
+is heartbeating:
+
+```bash
+kubectl get connectedclusters.kbind-provider.platform-mesh.io
+NAME            CONNECTED   READY   LAST HEARTBEAT   AGE
+bobs-wildwest   True        True    20s              30s
+```
+
+In the **kbind portal**, the connection should now appear in **Established** state.

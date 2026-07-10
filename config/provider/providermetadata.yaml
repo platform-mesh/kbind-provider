@@ -1,19 +1,19 @@
 apiVersion: ui.platform-mesh.io/v1alpha1
 kind: ProviderMetadata
 metadata:
-  name: kube-bind.io
+  name: kbind-provider.platform-mesh.io
 spec:
-  displayName: Kube Bind Provider
+  displayName: kbind Provider
   description: |
-    Kube Bind service provider for Platform Mesh.
+    kbind service provider for Platform Mesh.
     Provides API binding and service export capabilities.
   contacts:
-  - displayName: Kube Bind Team
-    email: kube-bind@platform-mesh.io
+  - displayName: kbind Team
+    email: kbind@platform-mesh.io
     role: ["Maintainer"]
   preferredSupportChannels:
-  - displayName: Kube Bind Support
-    url: https://github.com/kube-bind/kube-bind
+  - displayName: kbind Support
+    url: https://github.com/kbind-io/kbind
   icon:
     light:
       data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjkwIiBmaWxsPSIjMzI2Y2U1IiAvPgogIDx0ZXh0IHg9IjEwMCIgeT0iMTIwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNDAiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIj5LQjwvdGV4dD4KPC9zdmc+Cg=="

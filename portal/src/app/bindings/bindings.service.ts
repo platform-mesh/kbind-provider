@@ -1,172 +1,25 @@
-/**
- * Cluster Bindings Service - GraphQL API Client
- *
- * This service manages BindableResourcesRequest resources which represent
- * external cluster onboarding requests in the kube-bind system.
- *
- * Flow:
- * 1. User creates a BindableResourcesRequest with their cluster identity
- * 2. Backend processes the request and generates onboarding credentials
- * 3. Credentials are stored in a Secret referenced by status.kubeconfigSecretRef
- * 4. User retrieves the secret content to configure their external cluster
- *
- * To get cluster identity on the external cluster:
- *   kubectl bind cluster-identity
- * or manually:
- *   kubectl get namespace kube-system -o jsonpath='{.metadata.uid}'
- */
 import { Injectable, inject } from '@angular/core';
 import { LuigiContextService } from '@luigi-project/client-support-angular';
-import { from, map, Observable, of, switchMap, catchError, filter, take, throwError } from 'rxjs';
-
-export interface SecretKeyRef {
-  name: string;
-  key: string;
-}
-
-export interface ClusterIdentity {
-  identity: string;
-}
-
-export interface BindableResourcesRequest {
-  metadata: {
-    name: string;
-    namespace?: string;
-    creationTimestamp?: string;
-  };
-  spec: {
-    templateRef?: {
-      name: string;
-    };
-    author?: string;
-    clusterIdentity: ClusterIdentity;
-    kubeconfigSecretRef?: SecretKeyRef;
-    ttlAfterFinished?: string;
-  };
-  status?: {
-    phase?: 'Pending' | 'Failed' | 'Succeeded';
-    kubeconfigSecretRef?: SecretKeyRef;
-    completionTime?: string;
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-      lastTransitionTime?: string;
-    }>;
-  };
-}
-
-export interface Namespace {
-  metadata: {
-    name: string;
-  };
-}
-
-export interface ClusterBinding {
-  metadata: {
-    name: string;
-    namespace?: string;
-    creationTimestamp?: string;
-    labels?: Record<string, string>;
-    annotations?: Record<string, string>;
-  };
-  spec: {
-    kubeconfigSecretRef?: SecretKeyRef;
-    providerPrettyName?: string;
-  };
-  status?: {
-    lastHeartbeatTime?: string;
-    heartbeatInterval?: string;
-    konnectorVersion?: string;
-    consumerSecretRef?: {
-      name: string;
-      namespace: string;
-    };
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-      lastTransitionTime?: string;
-    }>;
-  };
-}
+import { from, map, Observable, of, switchMap, catchError, filter, take } from 'rxjs';
 
 export interface Secret {
-  metadata: {
-    name: string;
-    namespace?: string;
-  };
   data?: Record<string, string>;
 }
 
-export interface BindingListResponse {
-  kube_bind_io: {
-    v1alpha2: {
-      BindableResourcesRequests: {
-        items: BindableResourcesRequest[];
-      };
-    };
-  };
-}
-
-export interface NamespaceListResponse {
-  v1: {
-    Namespaces: {
-      items: Namespace[];
-    };
-  };
-}
-
-export interface SecretResponse {
+interface SecretResponse {
   v1: {
     Secret: Secret;
   };
 }
 
-export interface ClusterBindingListResponse {
-  kube_bind_io: {
-    v1alpha2: {
-      ClusterBindings: {
-        items: ClusterBinding[];
-      };
-    };
-  };
-}
-
 export interface APIBinding {
-  metadata: {
-    name: string;
-    creationTimestamp?: string;
-    labels?: Record<string, string>;
-    annotations?: Record<string, string>;
-  };
-  spec: {
-    reference?: {
-      export?: {
-        path?: string;
-        name?: string;
-      };
-    };
-  };
+  metadata: { name: string };
   status?: {
-    phase?: string;
-    boundResources?: Array<{
-      group: string;
-      resource: string;
-    }>;
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-      lastTransitionTime?: string;
-    }>;
+    boundResources?: Array<{ group: string; resource: string }>;
   };
 }
 
-export interface APIBindingListResponse {
+interface APIBindingListResponse {
   apis_kcp_io: {
     v1alpha1: {
       APIBindings: {
@@ -176,242 +29,39 @@ export interface APIBindingListResponse {
   };
 }
 
-export interface PermissionClaim {
-  group: string;
-  resource: string;
-  selector?: {
-    labelSelector?: {
-      matchLabels?: Record<string, string>;
-    };
-  };
+export interface ConnectedClusterCondition {
+  type: string;
+  status: string;
+  reason: string;
+  message: string;
+  lastTransitionTime?: string;
 }
 
-export interface ExportResource {
-  group: string;
-  resource: string;
-  versions: string[];
-}
-
-export interface APIServiceExportRequest {
-  metadata: {
-    name: string;
-    namespace?: string;
-    creationTimestamp?: string;
-    labels?: Record<string, string>;
-  };
-  spec: {
-    permissionClaims?: PermissionClaim[];
-    resources?: ExportResource[];
-  };
+export interface ConnectedCluster {
+  metadata: { name: string; creationTimestamp?: string };
+  spec?: { bundleAPIs?: { all?: boolean; apis?: Array<{ name: string }> } };
   status?: {
-    phase?: string;
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-      lastTransitionTime?: string;
-    }>;
+    localClusterUID?: string;
+    lastHeartbeatTime?: string;
+    conditions?: ConnectedClusterCondition[];
   };
 }
 
-export interface APIServiceExportRequestListResponse {
-  kube_bind_io: {
-    v1alpha2: {
-      APIServiceExportRequests: {
-        items: APIServiceExportRequest[];
+interface ConnectedClusterListResponse {
+  kbind_provider_platform_mesh_io: {
+    v1alpha1: {
+      ConnectedClusters: {
+        items: ConnectedCluster[];
       };
     };
   };
 }
-
-export interface APIServiceExportResource {
-  group: string;
-  resource: string;
-  versions: string[];
-}
-
-export interface APIServiceExport {
-  metadata: {
-    name: string;
-    namespace?: string;
-    creationTimestamp?: string;
-    labels?: Record<string, string>;
-    annotations?: Record<string, string>;
-  };
-  spec: {
-    informerScope?: string;
-    isolation?: string;
-    resources?: APIServiceExportResource[];
-  };
-  status?: {
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason?: string;
-      message?: string;
-      lastTransitionTime?: string;
-    }>;
-  };
-}
-
-export interface APIServiceExportListResponse {
-  kube_bind_io: {
-    v1alpha2: {
-      APIServiceExports: {
-        items: APIServiceExport[];
-      };
-    };
-  };
-}
-
-const LIST_BINDINGS_QUERY = `
-  query ListBindings {
-    kube_bind_io {
-      v1alpha2 {
-        BindableResourcesRequests {
-          items {
-            metadata {
-              name
-              namespace
-              creationTimestamp
-            }
-            spec {
-              templateRef {
-                name
-              }
-              author
-              clusterIdentity {
-                identity
-              }
-              kubeconfigSecretRef {
-                name
-                key
-              }
-            }
-            status {
-              phase
-              kubeconfigSecretRef {
-                name
-                key
-              }
-              completionTime
-              conditions {
-                type
-                status
-                reason
-                message
-                lastTransitionTime
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-const LIST_NAMESPACES_QUERY = `
-  query ListNamespaces {
-    v1 {
-      Namespaces {
-        items {
-          metadata {
-            name
-          }
-        }
-      }
-    }
-  }
-`;
 
 const GET_SECRET_QUERY = `
   query GetSecret($name: String!, $namespace: String!) {
     v1 {
       Secret(name: $name, namespace: $namespace) {
-        metadata {
-          name
-          namespace
-        }
         data
-      }
-    }
-  }
-`;
-
-const LIST_CLUSTER_BINDINGS_QUERY = `
-  query ListClusterBindings {
-    kube_bind_io {
-      v1alpha2 {
-        ClusterBindings {
-          items {
-            metadata {
-              name
-              namespace
-              creationTimestamp
-              labels
-              annotations
-            }
-            spec {
-              kubeconfigSecretRef {
-                name
-                key
-              }
-              providerPrettyName
-            }
-            status {
-              lastHeartbeatTime
-              heartbeatInterval
-              konnectorVersion
-              consumerSecretRef {
-                name
-                namespace
-              }
-              conditions {
-                type
-                status
-                reason
-                message
-                lastTransitionTime
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-const CREATE_BINDING_MUTATION = `
-  mutation CreateBinding($name: String!, $namespace: String!, $author: String, $clusterIdentity: String!, $ttlAfterFinished: String) {
-    kube_bind_io {
-      v1alpha2 {
-        createBindableResourcesRequest(
-          namespace: $namespace
-          object: {
-            metadata: { name: $name }
-            spec: {
-              author: $author
-              clusterIdentity: { identity: $clusterIdentity }
-              ttlAfterFinished: $ttlAfterFinished
-            }
-          }
-        ) {
-          metadata {
-            name
-            namespace
-          }
-        }
-      }
-    }
-  }
-`;
-
-const DELETE_BINDING_MUTATION = `
-  mutation DeleteBinding($name: String!, $namespace: String!) {
-    kube_bind_io {
-      v1alpha2 {
-        deleteBindableResourcesRequest(name: $name, namespace: $namespace)
       }
     }
   }
@@ -423,33 +73,9 @@ const LIST_API_BINDINGS_QUERY = `
       v1alpha1 {
         APIBindings {
           items {
-            metadata {
-              name
-              creationTimestamp
-              labels
-              annotations
-            }
-            spec {
-              reference {
-                export {
-                  path
-                  name
-                }
-              }
-            }
+            metadata { name }
             status {
-              phase
-              boundResources {
-                group
-                resource
-              }
-              conditions {
-                type
-                status
-                reason
-                message
-                lastTransitionTime
-              }
+              boundResources { group resource }
             }
           }
         }
@@ -458,48 +84,18 @@ const LIST_API_BINDINGS_QUERY = `
   }
 `;
 
-const DELETE_CLUSTER_BINDING_MUTATION = `
-  mutation DeleteClusterBinding($name: String!, $namespace: String!) {
-    kube_bind_io {
-      v1alpha2 {
-        deleteClusterBinding(name: $name, namespace: $namespace)
-      }
-    }
-  }
-`;
-
-const LIST_API_SERVICE_EXPORT_REQUESTS_QUERY = `
-  query ListAPIServiceExportRequests($namespace: String!) {
-    kube_bind_io {
-      v1alpha2 {
-        APIServiceExportRequests(namespace: $namespace) {
+const LIST_KBIND_CLUSTERS_QUERY = `
+  query ListConnectedClusters {
+    kbind_provider_platform_mesh_io {
+      v1alpha1 {
+        ConnectedClusters {
           items {
-            metadata {
-              name
-              namespace
-              creationTimestamp
-              labels
-            }
-            spec {
-              permissionClaims {
-                group
-                resource
-              }
-              resources {
-                group
-                resource
-                versions
-              }
-            }
+            metadata { name creationTimestamp }
+            spec { bundleAPIs { all apis { name } } }
             status {
-              phase
-              conditions {
-                type
-                status
-                reason
-                message
-                lastTransitionTime
-              }
+              localClusterUID
+              lastHeartbeatTime
+              conditions { type status reason message lastTransitionTime }
             }
           }
         }
@@ -508,76 +104,17 @@ const LIST_API_SERVICE_EXPORT_REQUESTS_QUERY = `
   }
 `;
 
-const CREATE_API_SERVICE_EXPORT_REQUEST_MUTATION = `
-  mutation CreateAPIServiceExportRequest(
-    $name: String!,
-    $namespace: String!,
-    $resources: [KubeBindIoV1alpha2APIServiceExportRequestSpecResources_Input]
-  ) {
-    kube_bind_io {
-      v1alpha2 {
-        createAPIServiceExportRequest(
-          namespace: $namespace
-          object: {
-            metadata: { name: $name }
-            spec: {
-              resources: $resources
-            }
-          }
-        ) {
-          metadata {
-            name
-            namespace
-          }
-        }
-      }
-    }
+const APPLY_KBIND_CLUSTER_MUTATION = `
+  mutation ApplyConnectedCluster($yaml: String!) {
+    applyYaml(yaml: $yaml)
   }
 `;
 
-const DELETE_API_SERVICE_EXPORT_REQUEST_MUTATION = `
-  mutation DeleteAPIServiceExportRequest($name: String!, $namespace: String!) {
-    kube_bind_io {
-      v1alpha2 {
-        deleteAPIServiceExportRequest(name: $name, namespace: $namespace)
-      }
-    }
-  }
-`;
-
-const LIST_API_SERVICE_EXPORTS_QUERY = `
-  query ListAPIServiceExports {
-    kube_bind_io {
-      v1alpha2 {
-        APIServiceExports {
-          items {
-            metadata {
-              name
-              namespace
-              creationTimestamp
-              labels
-              annotations
-            }
-            spec {
-              informerScope
-              isolation
-              resources {
-                group
-                resource
-                versions
-              }
-            }
-            status {
-              conditions {
-                type
-                status
-                reason
-                message
-                lastTransitionTime
-              }
-            }
-          }
-        }
+const DELETE_KBIND_CLUSTER_MUTATION = `
+  mutation DeleteConnectedCluster($name: String!) {
+    kbind_provider_platform_mesh_io {
+      v1alpha1 {
+        deleteConnectedCluster(name: $name)
       }
     }
   }
@@ -592,16 +129,22 @@ interface GraphQLConfig {
 export class BindingsService {
   private luigiContextService = inject(LuigiContextService);
 
-  /**
-   * Extracts GraphQL endpoint and auth token from the Luigi context.
-   */
+  private buildConnectedClusterYAML(name: string, apis: Array<{ name: string }>): string {
+    const specLines = apis.length === 0
+      ? ['spec:', '  bundleAPIs:', '    all: true']
+      : ['spec:', '  bundleAPIs:', '    apis:', ...apis.map(a => `      - name: ${a.name}`)];
+    return [
+      'apiVersion: kbind-provider.platform-mesh.io/v1alpha1',
+      'kind: ConnectedCluster',
+      'metadata:',
+      `  name: ${name}`,
+      ...specLines,
+    ].join('\n');
+  }
+
   private getGraphQLConfig(): Observable<GraphQLConfig> {
     return this.luigiContextService.contextObservable().pipe(
-      filter((ctx) => {
-        const hasContext = !!ctx?.context && Object.keys(ctx.context).length > 0;
-        console.log('[BindingsService] Context check:', { hasContext, ctx });
-        return hasContext;
-      }),
+      filter((ctx) => !!ctx?.context && Object.keys(ctx.context).length > 0),
       take(1),
       map((ctx) => {
         const context = ctx.context as any;
@@ -611,98 +154,17 @@ export class BindingsService {
           console.warn('crdGatewayApiUrl not found in context, falling back to default');
           endpoint = context.portalBaseUrl + '/graphql';
         }
-        console.log('[BindingsService] Using endpoint:', endpoint);
         return { endpoint, token };
       })
     );
   }
 
-  /**
-   * Get current user email from Luigi context for auto-populating author field.
-   */
-  public getCurrentUserEmail(): Observable<string | null> {
-    return this.luigiContextService.contextObservable().pipe(
-      filter((ctx) => !!ctx?.context),
-      take(1),
-      map((ctx) => {
-        const context = ctx.context as any;
-        // Try various places where user email might be stored
-        return (
-          context.userEmail ||
-          context.portalContext?.userEmail ||
-          context.user?.email ||
-          context.portalContext?.user?.email ||
-          null
-        );
-      })
-    );
-  }
-
   private buildHeaders(token: string | null): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
   }
 
-  /**
-   * List all BindableResourcesRequests (cluster binding requests).
-   */
-  listBindings(): Observable<BindableResourcesRequest[]> {
-    return this.getGraphQLConfig().pipe(
-      switchMap(({ endpoint, token }) =>
-        from(
-          fetch(endpoint, {
-            method: 'POST',
-            headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: LIST_BINDINGS_QUERY,
-            }),
-          }).then((res) => res.json())
-        )
-      ),
-      map((response: { data: BindingListResponse }) => {
-        return response.data?.kube_bind_io?.v1alpha2?.BindableResourcesRequests?.items || [];
-      }),
-      catchError((error) => {
-        console.error('Error fetching bindings:', error);
-        return of([]);
-      })
-    );
-  }
-
-  /**
-   * List all Namespaces available to the user.
-   */
-  listNamespaces(): Observable<Namespace[]> {
-    return this.getGraphQLConfig().pipe(
-      switchMap(({ endpoint, token }) =>
-        from(
-          fetch(endpoint, {
-            method: 'POST',
-            headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: LIST_NAMESPACES_QUERY,
-            }),
-          }).then((res) => res.json())
-        )
-      ),
-      map((response: { data: NamespaceListResponse }) => {
-        return response.data?.v1?.Namespaces?.items || [];
-      }),
-      catchError((error) => {
-        console.error('Error fetching namespaces:', error);
-        return of([]);
-      })
-    );
-  }
-
-  /**
-   * Get the secret containing the binding response/kubeconfig.
-   */
   getSecret(name: string, namespace: string): Observable<Secret | null> {
     return this.getGraphQLConfig().pipe(
       switchMap(({ endpoint, token }) =>
@@ -710,16 +172,11 @@ export class BindingsService {
           fetch(endpoint, {
             method: 'POST',
             headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: GET_SECRET_QUERY,
-              variables: { name, namespace },
-            }),
+            body: JSON.stringify({ query: GET_SECRET_QUERY, variables: { name, namespace } }),
           }).then((res) => res.json())
         )
       ),
-      map((response: { data: SecretResponse }) => {
-        return response.data?.v1?.Secret || null;
-      }),
+      map((response: { data: SecretResponse }) => response.data?.v1?.Secret || null),
       catchError((error) => {
         console.error('Error fetching secret:', error);
         return of(null);
@@ -727,107 +184,20 @@ export class BindingsService {
     );
   }
 
-  /**
-   * Create a new BindableResourcesRequest to onboard an external cluster.
-   *
-   * @param clusterName - Name for this cluster binding (becomes metadata.name)
-   * @param namespace - Namespace to create the request in
-   * @param clusterIdentity - Unique identity of the external cluster (from kubectl bind cluster-identity)
-   * @param author - Optional author identifier (e.g., user email)
-   * @param ttlAfterFinished - Optional TTL duration for the request (e.g., '1h', '30m')
-   */
-  createBinding(
-    clusterName: string,
-    namespace: string,
-    clusterIdentity: string,
-    author?: string,
-    ttlAfterFinished?: string
-  ): Observable<boolean> {
+  listAPIBindings(): Observable<APIBinding[]> {
     return this.getGraphQLConfig().pipe(
       switchMap(({ endpoint, token }) =>
         from(
           fetch(endpoint, {
             method: 'POST',
             headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: CREATE_BINDING_MUTATION,
-              variables: {
-                name: clusterName,
-                namespace,
-                author: author || 'portal-ui',
-                clusterIdentity,
-                ttlAfterFinished: ttlAfterFinished || '1h',
-              },
-            }),
+            body: JSON.stringify({ query: LIST_API_BINDINGS_QUERY }),
           }).then((res) => res.json())
         )
       ),
-      map((response: any) => {
-        if (response.errors) {
-          console.error('GraphQL errors:', response.errors);
-          const message = response.errors.map((e: any) => e.message).filter(Boolean).join('; ');
-          throw new Error(message || 'Failed to create cluster binding request');
-        }
-        return !!response.data?.kube_bind_io?.v1alpha2?.createBindableResourcesRequest;
-      }),
-      catchError((error) => {
-        console.error('Error creating binding:', error);
-        return throwError(() => error instanceof Error ? error : new Error(String(error)));
-      })
-    );
-  }
-
-  /**
-   * List all ClusterBindings (active bindings from remote clusters).
-   */
-  listClusterBindings(): Observable<ClusterBinding[]> {
-    console.log('[BindingsService] listClusterBindings called');
-    return this.getGraphQLConfig().pipe(
-      switchMap(({ endpoint, token }) => {
-        console.log('[BindingsService] Fetching cluster bindings from:', endpoint);
-        return from(
-          fetch(endpoint, {
-            method: 'POST',
-            headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: LIST_CLUSTER_BINDINGS_QUERY,
-            }),
-          }).then((res) => res.json())
-        );
-      }),
-      map((response: { data: ClusterBindingListResponse }) => {
-        console.log('[BindingsService] ClusterBindings response:', response);
-        return response.data?.kube_bind_io?.v1alpha2?.ClusterBindings?.items || [];
-      }),
-      catchError((error) => {
-        console.error('Error fetching cluster bindings:', error);
-        return of([]);
-      })
-    );
-  }
-
-  /**
-   * List all APIBindings from kcp workspace.
-   */
-  listAPIBindings(): Observable<APIBinding[]> {
-    console.log('[BindingsService] listAPIBindings called');
-    return this.getGraphQLConfig().pipe(
-      switchMap(({ endpoint, token }) => {
-        console.log('[BindingsService] Fetching API bindings from:', endpoint);
-        return from(
-          fetch(endpoint, {
-            method: 'POST',
-            headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: LIST_API_BINDINGS_QUERY,
-            }),
-          }).then((res) => res.json())
-        );
-      }),
-      map((response: { data: APIBindingListResponse }) => {
-        console.log('[BindingsService] APIBindings response:', response);
-        return response.data?.apis_kcp_io?.v1alpha1?.APIBindings?.items || [];
-      }),
+      map((response: { data: APIBindingListResponse }) =>
+        response.data?.apis_kcp_io?.v1alpha1?.APIBindings?.items || []
+      ),
       catchError((error) => {
         console.error('Error fetching API bindings:', error);
         return of([]);
@@ -835,189 +205,91 @@ export class BindingsService {
     );
   }
 
-  /**
-   * Delete a BindableResourcesRequest.
-   */
-  deleteBinding(name: string, namespace: string): Observable<boolean> {
+  listConnectedClusters(): Observable<ConnectedCluster[]> {
     return this.getGraphQLConfig().pipe(
       switchMap(({ endpoint, token }) =>
         from(
           fetch(endpoint, {
             method: 'POST',
             headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: DELETE_BINDING_MUTATION,
-              variables: { name, namespace },
-            }),
+            body: JSON.stringify({ query: LIST_KBIND_CLUSTERS_QUERY }),
           }).then((res) => res.json())
         )
       ),
-      map((response: any) => {
-        return !!response.data?.kube_bind_io?.v1alpha2?.deleteBindableResourcesRequest;
-      }),
+      map((response: { data: ConnectedClusterListResponse }) =>
+        response.data?.kbind_provider_platform_mesh_io?.v1alpha1?.ConnectedClusters?.items || []
+      ),
       catchError((error) => {
-        console.error('Error deleting binding:', error);
-        return of(false);
+        console.error('Error fetching ConnectedClusters:', error);
+        return of([]);
       })
     );
   }
 
-  /**
-   * Delete a ClusterBinding.
-   */
-  deleteClusterBinding(name: string, namespace: string): Observable<boolean> {
-    return this.getGraphQLConfig().pipe(
-      switchMap(({ endpoint, token }) =>
-        from(
-          fetch(endpoint, {
-            method: 'POST',
-            headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: DELETE_CLUSTER_BINDING_MUTATION,
-              variables: { name, namespace },
-            }),
-          }).then((res) => res.json())
-        )
-      ),
-      map((response: any) => {
-        if (response.errors) {
-          console.error('GraphQL errors:', response.errors);
-          return false;
-        }
-        return !!response.data?.kube_bind_io?.v1alpha2?.deleteClusterBinding;
-      }),
-      catchError((error) => {
-        console.error('Error deleting cluster binding:', error);
-        return of(false);
-      })
-    );
-  }
-
-  /**
-   * List all APIServiceExportRequests in a namespace.
-   */
-  listAPIServiceExportRequests(namespace: string): Observable<APIServiceExportRequest[]> {
-    console.log('[BindingsService] listAPIServiceExportRequests called for namespace:', namespace);
+  createConnectedCluster(cluster: ConnectedCluster): Observable<ConnectedCluster | null> {
     return this.getGraphQLConfig().pipe(
       switchMap(({ endpoint, token }) => {
-        console.log('[BindingsService] Fetching API service export requests from:', endpoint);
+        const yaml = this.buildConnectedClusterYAML(cluster.metadata.name, cluster.spec?.bundleAPIs?.apis ?? []);
         return from(
           fetch(endpoint, {
             method: 'POST',
             headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: LIST_API_SERVICE_EXPORT_REQUESTS_QUERY,
-              variables: { namespace },
-            }),
+            body: JSON.stringify({ query: APPLY_KBIND_CLUSTER_MUTATION, variables: { yaml } }),
           }).then((res) => res.json())
         );
       }),
-      map((response: { data: APIServiceExportRequestListResponse }) => {
-        console.log('[BindingsService] APIServiceExportRequests response:', response);
-        return response.data?.kube_bind_io?.v1alpha2?.APIServiceExportRequests?.items || [];
+      map((response: any) => {
+        if (response.errors?.length) throw new Error(response.errors[0].message);
+        return response.data?.applyYaml ?? null;
       }),
       catchError((error) => {
-        console.error('Error fetching API service export requests:', error);
-        return of([]);
+        console.error('Error creating ConnectedCluster:', error);
+        return of(null);
       })
     );
   }
 
-  /**
-   * Create a new APIServiceExportRequest.
-   * Note: permissionClaims is currently not supported in the GraphQL schema
-   */
-  createAPIServiceExportRequest(
-    name: string,
-    namespace: string,
-    resources: ExportResource[],
-    _permissionClaims?: PermissionClaim[]
-  ): Observable<boolean> {
+  patchConnectedClusterSpec(name: string, apis: Array<{ name: string }>): Observable<ConnectedCluster | null> {
+    return this.getGraphQLConfig().pipe(
+      switchMap(({ endpoint, token }) => {
+        const yaml = this.buildConnectedClusterYAML(name, apis);
+        return from(
+          fetch(endpoint, {
+            method: 'POST',
+            headers: this.buildHeaders(token),
+            body: JSON.stringify({ query: APPLY_KBIND_CLUSTER_MUTATION, variables: { yaml } }),
+          }).then((res) => res.json())
+        );
+      }),
+      map((response: any) => {
+        if (response.errors?.length) throw new Error(response.errors[0].message);
+        return response.data?.applyYaml ?? null;
+      }),
+      catchError((error) => {
+        console.error('Error patching ConnectedCluster:', error);
+        return of(null);
+      })
+    );
+  }
+
+  deleteConnectedCluster(name: string): Observable<boolean> {
     return this.getGraphQLConfig().pipe(
       switchMap(({ endpoint, token }) =>
         from(
           fetch(endpoint, {
             method: 'POST',
             headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: CREATE_API_SERVICE_EXPORT_REQUEST_MUTATION,
-              variables: {
-                name,
-                namespace,
-                resources,
-              },
-            }),
+            body: JSON.stringify({ query: DELETE_KBIND_CLUSTER_MUTATION, variables: { name } }),
           }).then((res) => res.json())
         )
       ),
       map((response: any) => {
-        if (response.errors) {
-          console.error('GraphQL errors:', response.errors);
-          return false;
-        }
-        return !!response.data?.kube_bind_io?.v1alpha2?.createAPIServiceExportRequest;
+        if (response.errors?.length) throw new Error(response.errors[0].message);
+        return response.data?.kbind_provider_platform_mesh_io?.v1alpha1?.deleteConnectedCluster === true;
       }),
       catchError((error) => {
-        console.error('Error creating API service export request:', error);
+        console.error('Error deleting ConnectedCluster:', error);
         return of(false);
-      })
-    );
-  }
-
-  /**
-   * Delete an APIServiceExportRequest.
-   */
-  deleteAPIServiceExportRequest(name: string, namespace: string): Observable<boolean> {
-    return this.getGraphQLConfig().pipe(
-      switchMap(({ endpoint, token }) =>
-        from(
-          fetch(endpoint, {
-            method: 'POST',
-            headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: DELETE_API_SERVICE_EXPORT_REQUEST_MUTATION,
-              variables: { name, namespace },
-            }),
-          }).then((res) => res.json())
-        )
-      ),
-      map((response: any) => {
-        if (response.errors) {
-          console.error('GraphQL errors:', response.errors);
-          return false;
-        }
-        return !!response.data?.kube_bind_io?.v1alpha2?.deleteAPIServiceExportRequest;
-      }),
-      catchError((error) => {
-        console.error('Error deleting API service export request:', error);
-        return of(false);
-      })
-    );
-  }
-
-  /**
-   * List all APIServiceExports across namespaces.
-   */
-  listAPIServiceExports(): Observable<APIServiceExport[]> {
-    console.log('[BindingsService] listAPIServiceExports called');
-    return this.getGraphQLConfig().pipe(
-      switchMap(({ endpoint, token }) =>
-        from(
-          fetch(endpoint, {
-            method: 'POST',
-            headers: this.buildHeaders(token),
-            body: JSON.stringify({
-              query: LIST_API_SERVICE_EXPORTS_QUERY,
-            }),
-          }).then((res) => res.json())
-        )
-      ),
-      map((response: { data: APIServiceExportListResponse }) => {
-        return response.data?.kube_bind_io?.v1alpha2?.APIServiceExports?.items || [];
-      }),
-      catchError((error) => {
-        console.error('Error fetching API service exports:', error);
-        return of([]);
       })
     );
   }

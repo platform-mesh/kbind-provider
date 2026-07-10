@@ -1,0 +1,11 @@
+Platform Mesh kbind provider deployed.
+
+The operator init container bootstraps the kcp provider workspace on every pod start.
+The operator container watches the kbind APIExport and reconciles bound workspaces.
+
+Prerequisites:
+  The Secret "{{ .Values.kcpKubeconfigSecret }}" must exist in namespace {{ .Release.Namespace }}
+  and contain a kubeconfig under key "{{ .Values.kcpKubeconfigKey }}" pointing at the
+  kcp provider workspace.
+
+Watching endpoint slice: {{ .Values.endpointSliceName }}

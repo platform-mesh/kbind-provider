@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kbind-provider-operator
+description: Platform Mesh kbind provider operator
+type: application
+# NOTE: updated by the release pipeline — do not edit manually.
+version: 0.0.1
+appVersion: "0.0.1"

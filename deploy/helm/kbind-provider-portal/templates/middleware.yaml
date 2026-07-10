@@ -1,0 +1,22 @@
+{{- if .Values.middleware.enabled -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "kbind-provider-portal.fullname" . }}-cors
+  namespace: {{ .Values.middleware.namespace | default .Values.httpRoute.namespace | default "platform-mesh-system" }}
+  labels:
+    {{- include "kbind-provider-portal.labels" . | nindent 4 }}
+spec:
+  headers:
+    accessControlAllowCredentials: true
+    accessControlAllowHeaders:
+      - "*"
+    accessControlAllowMethods:
+      - GET
+      - OPTIONS
+      - POST
+    accessControlAllowOriginList:
+      {{- toYaml .Values.middleware.corsOrigins | nindent 6 }}
+    accessControlMaxAge: 100
+    addVaryHeader: true
+{{- end }}

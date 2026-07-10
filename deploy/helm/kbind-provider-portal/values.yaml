@@ -1,0 +1,89 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/platform-mesh/kbind-provider-portal
+  pullPolicy: IfNotPresent
+  tag: "@sha256:c9ee3f063cc910af51445e242cd1a8dfa1e2fec982b3ac257a0fc6bc4025f049"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 101
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: portal.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+httpRoute:
+  enabled: false
+  namespace: platform-mesh-system
+  hostnames:
+    - portal.localhost
+    - "*.portal.localhost"
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: k8sapi-gateway
+      namespace: platform-mesh-system
+  pathPrefix: /kbind
+  filters:
+    - extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: kbind-provider-portal-cors
+      type: ExtensionRef
+  referenceGrant:
+    enabled: true
+    fromNamespace: platform-mesh-system
+
+middleware:
+  enabled: false
+  namespace: platform-mesh-system
+  corsOrigins:
+    - http://localhost:4300
+    - https://portal.localhost:8443
+    - https://*.portal.localhost:8443
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

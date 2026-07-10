@@ -1,0 +1,22 @@
+- op: add
+  path: /metadata/labels
+  value:
+    "ui.platform-mesh.io/content-for": kbind-provider.platform-mesh.io
+- op: add
+  path: /spec/permissionClaims
+  value:
+  - group: ""
+    resource: namespaces
+    verbs: ["*"]
+  - group: ""
+    resource: serviceaccounts
+    verbs: ["*"]
+  - group: ""
+    resource: secrets
+    verbs: ["*"]
+  - group: "rbac.authorization.k8s.io"
+    resource: clusterrolebindings
+    verbs: ["*"]
+  - group: coordination.k8s.io
+    resource: leases
+    verbs: ["*"]

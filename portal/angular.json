@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "kube-bind-portal": {
+    "kbind-provider-portal": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "baseHref": "/kube-bind/",
+            "baseHref": "/kbind/",
             "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
@@ -66,10 +66,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "kube-bind-portal:build:production"
+              "buildTarget": "kbind-provider-portal:build:production"
             },
             "development": {
-              "buildTarget": "kube-bind-portal:build:development"
+              "buildTarget": "kbind-provider-portal:build:development"
             }
           },
           "defaultConfiguration": "development"
