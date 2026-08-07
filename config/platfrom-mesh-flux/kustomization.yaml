@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Apply against the runtime cluster where the platform-mesh-operator runs:
+#   kubectl apply -k config/platfrom-mesh-flux
+namespace: platform-mesh-system
+resources:
+  - managedprovider.yaml
+
+# ---------------------------------------------------------------------------
+# Front-proxy IP for kcp hostAliases (environment-specific). Discover it with:
+#   kubectl -n platform-mesh-system get svc frontproxy-front-proxy \
+#     -o jsonpath='{.spec.clusterIP}'
+# Only the operator (runtimeDeployments[0]) needs hostAliases; the portal does not.
+# ---------------------------------------------------------------------------
+patches:
+  - target:
+      group: providers.platform-mesh.io
+      version: v1alpha1
+      kind: ManagedProvider
+      name: kbind
+    patch: |
+      - op: replace
+        path: /spec/runtimeDeployments/0/flux/values/hostAliases/0/ip
+        value: "10.96.188.4"

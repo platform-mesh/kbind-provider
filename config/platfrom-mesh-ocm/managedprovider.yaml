@@ -1,4 +1,4 @@
-# ManagedProvider — OCM delivery of the kube-bind provider.
+# ManagedProvider — OCM delivery of the kbind provider.
 #
 # The platform-mesh-operator drives the full lifecycle:
 #   1. WaitPlatformMesh - waits for the referenced PlatformMesh to be Ready.
@@ -13,9 +13,8 @@
 #                         descriptor (signatures, references, relocation) and the resolved
 #                         chart is deployed via Flux (OCIRepository + HelmRelease).
 #
-# The kube-bind-backend chart consumes the copied provider kubeconfig: its init container
-# (init.enabled=true) bootstraps the kube-bind + platform-mesh assets into the provider
-# workspace, and the backend container then serves against that workspace.
+# The kbind-provider-operator chart consumes the copied provider kubeconfig to connect to
+# the kcp provider workspace, where it manages kbind APIExports and consumer bindings.
 #
 # Prerequisites:
 #   - the ocm-controller (ocm-k8s-toolkit) is installed in the runtime cluster, and
@@ -24,7 +23,7 @@
 apiVersion: providers.platform-mesh.io/v1alpha1
 kind: ManagedProvider
 metadata:
-  name: kube-bind
+  name: kbind
   namespace: platform-mesh-system
 spec:
   platformMeshRef:
@@ -33,78 +32,20 @@ spec:
   cleanupOnDelete: false
 
   runtimeDeployments:
-    # ---- kube-bind backend (via our OCM component) ---------------------------
-    # Resolves the `backend-chart` resource of our kube-bind-provider OCM component — the
-    # upstream kube-bind chart, bundled and relocated into ghcr.io/platform-mesh by
-    # `make ocm-push`. All PlatformMesh config is supplied here as Helm values (upstream
-    # chart value structure). `name` sets the generated Repository/Component/Resource/
-    # OCIRepository/HelmRelease names (required so backend and portal — same component
-    # name — don't collide).
+    # ---- kbind-provider operator (via our OCM component) --------------------
+    # Resolves the `operator-chart` resource of our kbind-provider OCM component.
+    # `name` sets the generated Repository/Component/Resource/OCIRepository/HelmRelease
+    # names (required so operator and portal — same component — don't collide).
     - ocm:
-        name: kube-bind-backend
+        name: kbind-provider-operator
         registry: ghcr.io/platform-mesh
-        component: github.com/platform-mesh/kube-bind-provider
-        version: "0.0.3"
-        resourceName: backend-chart
+        component: github.com/platform-mesh/kbind-provider
+        version: "0.0.1"
+        resourceName: operator-chart
         values:
-          backend:
-            image:
-              # Upstream bind backend image. Keep in sync with the backend-image resource
-              # in the OCM component (Makefile BACKEND_IMAGE_TAG).
-              repository: ghcr.io/kbind-dev/backend
-              tag: "0.0.0-6ac88b0f68dc5247c773dd6c3b3a0f44a64e9b1b"
-            # kcp kubeconfig, mounted from the provider-kubeconfig secret below.
-            kubeconfig: /etc/kube-bind/kubeconfig
-            externalAddress: https://kcp.api.portal.localhost:8443
-            prettyName: PlatformMesh.io
-            namespacePrefix: kube-bind-
-            consumerScope: cluster
-            clusterScopeIsolation: none
-            multiclusterRuntimeProvider: kcp
-            schemaSource: apiresourceschemas
-            apiexportEndpointSliceName: kube-bind.io
-            frontendDisabled: true
-            apibindingIgnorePrefixes:
-              - core.platform-mesh.io
-              - tenancy.kcp.io
-              - topology.kcp.io
-              - kube-bind.io
-          # Bootstrap the provider workspace before the backend starts. The Provider
-          # machinery creates an EMPTY workspace; this init container (built by this repo)
-          # installs the kube-bind APIExport/schemas + platform-mesh backend
-          # RBAC/ServiceAccount, then provisions the backend kubeconfig.
-          initContainers:
-            - name: bootstrap
-              image: ghcr.io/platform-mesh/kube-bind-provider-init:sha-10c60fe
-              args:
-                - --kcp-kubeconfig=/etc/kube-bind/kubeconfig
-                # Bootstrap INTO the operator-provisioned provider workspace; do NOT create
-                # workspaces (the scoped SA can't, and the workspace already exists). Default,
-                # set explicitly for clarity.
-                - --seed-workspaces=false
-                # If the copied kubeconfig needs a different front-proxy host, add:
-                # - --host-override=https://frontproxy-front-proxy.platform-mesh-system:8443
-              volumeMounts:
-                - name: kubeconfig
-                  mountPath: /etc/kube-bind
-                  readOnly: true
-          # Mount the provider-workspace kubeconfig (copied in by the operator as
-          # kube-bind-provider-kubeconfig) at /etc/kube-bind for both the init container
-          # and the backend (backend.kubeconfig above).
-          volumes:
-            - name: kubeconfig
-              secret:
-                secretName: kube-bind-provider-kubeconfig
-                items:
-                  - key: kubeconfig
-                    path: kubeconfig
-          volumeMounts:
-            - name: kubeconfig
-              mountPath: /etc/kube-bind
-              readOnly: true
           # kcp advertises the virtual-workspace endpoint as
           # https://root.kcp.localhost:8443/... which resolves to 127.0.0.1 inside the pod.
-          # Pin those hostnames to the in-cluster front-proxy service IP so the backend can
+          # Pin those hostnames to the in-cluster front-proxy service IP so the operator can
           # reach the workspace. The IP is environment-specific — set via the kustomize
           # patch in kustomization.yaml.
           hostAliases:
@@ -117,14 +58,14 @@ spec:
                 - kcp.localhost
                 - localhost
 
-    # ---- kube-bind portal (Angular UI, via OCM) ------------------------------
+    # ---- kbind portal (Angular UI, via OCM) ------------------------------
     # Resolves the `portal-chart` resource of the same OCM component. The portal needs no
     # kubeconfig; it is exposed through the platform Gateway.
     - ocm:
-        name: kube-bind-portal
+        name: kbind-provider-portal
         registry: ghcr.io/platform-mesh
-        component: github.com/platform-mesh/kube-bind-provider
-        version: "0.0.3"
+        component: github.com/platform-mesh/kbind-provider
+        version: "0.0.1"
         resourceName: portal-chart
         values:
           httpRoute:

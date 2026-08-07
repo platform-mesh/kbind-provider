@@ -1,5 +1,5 @@
 {
-  "name": "kube-bind",
+  "name": "kbind",
   "luigiConfigFragment": {
     "data": {
       "nodes": [
@@ -9,33 +9,13 @@
             "icon": "building",
             "collapsible": false
           },
-          "pathSegment": "kube-bind-requests",
-          "label": "Binding Requests",
+          "pathSegment": "connect-cluster",
+          "label": "Connect Cluster",
           "hideFromNav": false,
           "icon": "chain-link",
-          "url": "http://localhost:4300/index.html",
+          "url": "http://localhost:4300/kbind/#/connect-cluster",
           "entityType": "main.core_platform-mesh_io_account:1",
           "order": 900,
-          "loadingIndicator": {
-            "enabled": true
-          },
-          "context": {
-            "accountId": ":core_platform-mesh_io_accountId"
-          }
-        },
-        {
-          "category": {
-            "label": "Providers",
-            "icon": "building",
-            "collapsible": false
-          },
-          "pathSegment": "service-mappings",
-          "label": "Service Mappings",
-          "hideFromNav": false,
-          "icon": "share-2",
-          "url": "http://localhost:4300/index.html#/service-mappings",
-          "entityType": "main.core_platform-mesh_io_account:1",
-          "order": 901,
           "loadingIndicator": {
             "enabled": true
           },

@@ -1,0 +1,64 @@
+# ManagedProvider — Flux delivery of the kbind provider.
+#
+# The platform-mesh-operator drives the full lifecycle:
+#   1. WaitPlatformMesh - waits for the referenced PlatformMesh to be Ready.
+#   2. ProviderResource - creates a Provider in kcp, provisioning a dedicated provider
+#                         workspace + a scoped admin kubeconfig Secret in that workspace.
+#   3. WaitProvider     - waits for the Provider to reach phase=Ready.
+#   4. KubeconfigCopy   - copies that kubeconfig into this runtime namespace as Secret
+#                         "<name>-provider-kubeconfig" (key: kubeconfig).
+#   5. Deploy           - for every runtimeDeployments[].flux entry the operator creates
+#                         a Flux OCIRepository + HelmRelease that installs the chart
+#                         into this namespace.
+#
+# The kbind-provider-operator chart includes an init container that bootstraps the kcp
+# provider workspace (APIExport, APIResourceSchema, RBAC) on every pod start.
+#
+# Prerequisites:
+#   - Flux is installed in the runtime cluster, and
+#   - Helm charts are published first via `make helm-push`.
+#     Keep the version: in each flux: entry in sync with the published CHART_VERSION.
+apiVersion: providers.platform-mesh.io/v1alpha1
+kind: ManagedProvider
+metadata:
+  name: kbind
+  namespace: platform-mesh-system
+spec:
+  platformMeshRef:
+    name: platform-mesh
+
+  cleanupOnDelete: false
+
+  runtimeDeployments:
+    # ---- kbind-provider operator ------------------------------------------------
+    - flux:
+        chart: kbind-provider-operator
+        registry: ghcr.io/platform-mesh/kbind-provider/charts
+        version: "0.0.1"
+        values:
+          # kcp advertises the virtual-workspace endpoint as
+          # https://root.kcp.localhost:8443/... which resolves to 127.0.0.1 inside the pod.
+          # Pin those hostnames to the in-cluster front-proxy service IP so the operator can
+          # reach the workspace. The IP is environment-specific — set via the kustomize
+          # patch in kustomization.yaml.
+          hostAliases:
+            - ip: "127.0.0.1" # PLACEHOLDER - overridden by kustomization.yaml patch
+              hostnames:
+                - root.kcp.localhost
+                - triton.kcp.localhost
+                - nereus.kcp.localhost
+                - kcp.api.portal.localhost
+                - kcp.localhost
+                - localhost
+
+    # ---- kbind portal (Angular UI) ----------------------------------------------
+    # The portal needs no kubeconfig; it is exposed through the platform Gateway.
+    - flux:
+        chart: kbind-provider-portal
+        registry: ghcr.io/platform-mesh/kbind-provider/charts
+        version: "0.0.1"
+        values:
+          httpRoute:
+            enabled: true
+          middleware:
+            enabled: true

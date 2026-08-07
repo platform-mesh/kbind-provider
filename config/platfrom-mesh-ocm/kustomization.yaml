@@ -3,7 +3,7 @@ kind: Kustomization
 # Apply against the runtime cluster where the platform-mesh-operator runs:
 #   kubectl apply -k config/platfrom-mesh-ocm
 #
-# Deploys the kube-bind backend + portal via OCM component resolution. The OCM
+# Deploys the kbind backend + portal via OCM component resolution. The OCM
 # Repository/Component/Resource objects are created by the operator from the inline
 # ocm: coordinates, so nothing extra is shipped here.
 namespace: platform-mesh-system
@@ -21,7 +21,7 @@ patches:
       group: providers.platform-mesh.io
       version: v1alpha1
       kind: ManagedProvider
-      name: kube-bind
+      name: kbind
     patch: |
       - op: replace
         path: /spec/runtimeDeployments/0/ocm/values/hostAliases/0/ip

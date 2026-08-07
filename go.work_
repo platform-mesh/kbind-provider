@@ -1,7 +1,0 @@
-go 1.25.1
-
-use (
-	.
-	../../kube-bind/kube-bind
-	../../kube-bind/kube-bind/contrib/kcp
-)

@@ -3,94 +3,40 @@ kind: ContentConfiguration
 metadata:
   labels:
     ui.platform-mesh.io/entity: core_platform-mesh_io_account
-    ui.platform-mesh.io/content-for: kube-bind.io
-  name: kube-bind-ui
+    ui.platform-mesh.io/content-for: kbind-provider.platform-mesh.io
+  name: kbind-provider.platform-mesh.io
 spec:
   inlineConfiguration:
     content: |-
       {
-          "name": "kube-bind-ui",
+          "name": "kbind-ui",
           "luigiConfigFragment": {
               "data": {
                   "nodes": [
                       {
-                          "category": {
-                              "label": "Kube Bind",
-                              "icon": "chain-link",
-                              "collapsible": false
-                          },
-                          "pathSegment": "binding-requests",
-                          "label": "Binding Requests",
-                          "hideFromNav": false,
-                          "icon": "document",
-                          "url": "https://{context.organization}.portal.localhost:8443/kube-bind/requests",
-                          "entityType": "main.core_platform-mesh_io_account",
-                          "order": 800,
-                          "loadingIndicator": {
-                              "enabled": true
-                          },
-                          "context": {
-                              "accountId": ":core_platform-mesh_io_accountId"
-                          }
-                      },
-                      {
-                          "category": {
-                              "label": "Kube Bind",
-                              "icon": "chain-link",
-                              "collapsible": false
-                          },
-                          "pathSegment": "cluster-bindings",
-                          "label": "Cluster Bindings",
+                          "pathSegment": "kbind",
+                          "label": "kbind",
                           "hideFromNav": false,
                           "icon": "chain-link",
-                          "url": "https://{context.organization}.portal.localhost:8443/kube-bind/cluster-bindings",
+                          "url": "https://{context.organization}.portal.localhost:8443/kbind/",
                           "entityType": "main.core_platform-mesh_io_account",
-                          "order": 801,
-                          "loadingIndicator": {
-                              "enabled": true
-                          },
+                          "order": 800,
                           "context": {
                               "accountId": ":core_platform-mesh_io_accountId"
                           }
-                      },
+                      }
+                  ],
+                  "texts": [
                       {
-                          "category": {
-                              "label": "Kube Bind",
-                              "icon": "chain-link",
-                              "collapsible": false
-                          },
-                          "pathSegment": "service-mappings",
-                          "label": "Service Mappings",
-                          "hideFromNav": false,
-                          "icon": "share-2",
-                          "url": "https://{context.organization}.portal.localhost:8443/kube-bind/service-mappings",
-                          "entityType": "main.core_platform-mesh_io_account",
-                          "order": 802,
-                          "loadingIndicator": {
-                              "enabled": true
-                          },
-                          "context": {
-                              "accountId": ":core_platform-mesh_io_accountId"
+                          "locale": "",
+                          "textDictionary": {
+                              "kbind": "kbind"
                           }
                       },
                       {
-                          "category": {
-                              "label": "Kube Bind",
-                              "icon": "chain-link",
-                              "collapsible": false
-                          },
-                          "pathSegment": "active-bindings",
-                          "label": "Active Bindings",
-                          "hideFromNav": false,
-                          "icon": "connected",
-                          "url": "https://{context.organization}.portal.localhost:8443/kube-bind/active-bindings",
-                          "entityType": "main.core_platform-mesh_io_account",
-                          "order": 803,
-                          "loadingIndicator": {
-                              "enabled": true
-                          },
-                          "context": {
-                              "accountId": ":core_platform-mesh_io_accountId"
+                          "locale": "en",
+                          "textDictionary": {
+                              "kbind": "kbind"
                           }
                       }
                   ]
