@@ -43,13 +43,13 @@ replace (
 
 require (
 	github.com/kcp-dev/multicluster-provider v0.8.0
-	github.com/kcp-dev/sdk v0.32.0
+	github.com/kcp-dev/sdk v0.32.3
 	github.com/platform-mesh/kube-bind-provider/sdk v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.10.2
 	k8s.io/api v0.36.3
 	k8s.io/apimachinery v0.36.3
-	k8s.io/client-go v0.36.0
-	k8s.io/code-generator v0.36.0
+	k8s.io/client-go v0.36.3
+	k8s.io/code-generator v0.36.3
 	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/controller-runtime v0.24.1
 	sigs.k8s.io/multicluster-runtime v0.24.1
@@ -85,7 +85,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kcp-dev/apimachinery/v2 v2.32.0 // indirect
+	github.com/kcp-dev/apimachinery/v2 v2.32.3 // indirect
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect

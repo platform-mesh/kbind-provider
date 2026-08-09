@@ -82,8 +82,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
-github.com/kcp-dev/apimachinery/v2 v2.32.0 h1:0Z8zZ5KQgeeVNkATncJZaRvMUAur8WVLX7U744AxPKs=
-github.com/kcp-dev/apimachinery/v2 v2.32.0/go.mod h1:1Rkhiwoq345wlUYtq1/P+3chL2eE1rdoIgBPwb6Y9x8=
+github.com/kcp-dev/apimachinery/v2 v2.32.3 h1:yOPnKrwlPOpM8FcjXZm7UJ5jD482vcdjGPyHyOUQayE=
+github.com/kcp-dev/apimachinery/v2 v2.32.3/go.mod h1:1Rkhiwoq345wlUYtq1/P+3chL2eE1rdoIgBPwb6Y9x8=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20260602065202-e006560fc76a h1:1k49zqcr+54UquOj46hY0yRurpRuEJI8TSHr8iyNKZg=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20260602065202-e006560fc76a/go.mod h1:IjHWT2O66SfysG/Ti8VyFHYvzhNftesoXeffmyprgwc=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiextensions-apiserver v0.0.0-20260602065202-e006560fc76a h1:5xvOaxgrPM/QSxnOPpBBVVzYr82YlCkOy5VdM6IeHzo=
@@ -102,8 +102,8 @@ github.com/kcp-dev/logicalcluster/v3 v3.0.5 h1:JbYakokb+5Uinz09oTXomSUJVQsqfxEvU
 github.com/kcp-dev/logicalcluster/v3 v3.0.5/go.mod h1:EWBUBxdr49fUB1cLMO4nOdBWmYifLbP1LfoL20KkXYY=
 github.com/kcp-dev/multicluster-provider v0.8.0 h1:GpifvXjgUUy/V3BDwcPayBhcg85ANN/lI/zWNkEeJpk=
 github.com/kcp-dev/multicluster-provider v0.8.0/go.mod h1:7LkQot2Ljmsv1w5ZjfHpjVEbQwtFQiA6LAWHbiHCGUI=
-github.com/kcp-dev/sdk v0.32.0 h1:H7BPHf/aZbdw/DbYLQX3Nu3lGeR5bmqOsmbt8KyqKRY=
-github.com/kcp-dev/sdk v0.32.0/go.mod h1:H6SCvNS25sReJ61YDy6OPEmngTUFP7/CY0fRM576FM4=
+github.com/kcp-dev/sdk v0.32.3 h1:aJZYLduj+6Xcnjbw4MjYKCp/WfpX6XGFXCMalKMT0Ek=
+github.com/kcp-dev/sdk v0.32.3/go.mod h1:861Aee5vMdMs1gA6Xg8DPlLhy/pt5ReYzdIcsFVr/b4=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
 github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
