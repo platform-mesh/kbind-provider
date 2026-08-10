@@ -6,8 +6,10 @@
   "packageRules": [
     {
       "matchManagers": ["gomod"],
-      "matchPackagePrefixes": ["github.com/kcp-dev/kubernetes"],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "github.com/kcp-dev/kubernetes{/,}**"
+      ]
     }
   ]
 }
