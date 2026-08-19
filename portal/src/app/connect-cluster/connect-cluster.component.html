@@ -9,6 +9,31 @@
   </ui5-dynamic-page-title>
 
   <div class="page-content">
+    <div class="help-panel" [class.help-panel--expanded]="helpExpanded()">
+      <div class="help-header" (click)="toggleHelp()">
+        <ui5-icon name="sys-help" class="help-icon"></ui5-icon>
+        <span class="help-title">konnector required in the downstream cluster</span>
+        <ui5-icon [name]="helpExpanded() ? 'slim-arrow-down' : 'slim-arrow-right'" class="help-toggle-icon"></ui5-icon>
+      </div>
+      @if (helpExpanded()) {
+        <div class="help-body">
+          <ui5-text>
+            If you haven't already, deploy konnector into the downstream cluster before adding a connection:
+          </ui5-text>
+          <div class="bundle-preview" style="margin: 0.5rem 0">
+            <div class="preview-header">
+              <ui5-title level="H6">Deploy with Helm</ui5-title>
+              <ui5-button design="Transparent" icon="copy" (click)="copyHelmCommand()">Copy</ui5-button>
+            </div>
+            <pre class="bundle-yaml">helm -n kbind upgrade --install --create-namespace \
+  konnector oci://ghcr.io/kbind-dev/charts/konnector-v2:2.0.0-rc7</pre>
+          </div>
+          <ui5-text>To customize the installation, refer to the <ui5-link href="https://github.com/kbind-dev/kbind/blob/v2-next/deploy/charts/konnector-v2/values.yaml" target="_blank">values.yaml</ui5-link>.</ui5-text>
+          <ui5-text>For more information, see the <ui5-link href="https://kbind.dev/" target="_blank">kbind documentation</ui5-link>.</ui5-text>
+        </div>
+      }
+    </div>
+
     @if (loading()) {
       <div class="loading-state">
         <ui5-text>Loading...</ui5-text>
