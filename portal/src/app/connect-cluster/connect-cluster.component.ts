@@ -23,6 +23,7 @@ import '@ui5/webcomponents-icons/dist/delete.js';
 import '@ui5/webcomponents-icons/dist/refresh.js';
 import '@ui5/webcomponents-icons/dist/slim-arrow-down.js';
 import '@ui5/webcomponents-icons/dist/slim-arrow-right.js';
+import '@ui5/webcomponents-icons/dist/sys-help.js';
 import '@ui5/webcomponents-icons/dist/warning.js';
 
 import { BindingsService, ConnectedCluster } from '../bindings/bindings.service';
@@ -136,6 +137,14 @@ export class ConnectClusterComponent implements OnInit {
     () => !this.editIsAutoBind() && this.editSelectedAPIs().size > 0 && !!this.editGeneratedYAML() && this.editHasChanges()
   );
 
+  // ── help panel state ─────────────────────────────────────────────────────────
+
+  helpExpanded = signal(true);
+
+  toggleHelp(): void {
+    this.helpExpanded.set(!this.helpExpanded());
+  }
+
   // ── delete dialog state ──────────────────────────────────────────────────────
 
   deletingClusterName = signal('');
@@ -182,6 +191,7 @@ export class ConnectClusterComponent implements OnInit {
         }
 
         this.connectedClusters.set(clusters);
+        this.helpExpanded.set(clusters.length === 0);
         this.loading.set(false);
         LuigiClient.uxManager().hideLoadingIndicator();
       },
@@ -316,6 +326,13 @@ export class ConnectClusterComponent implements OnInit {
     if (!cluster || !kubeconfig || this.editSelectedAPIs().size === 0) return;
     const apis = [...this.editSelectedAPIs()].sort();
     this.editGeneratedYAML.set(this.assembleBundle(cluster.metadata.name, apis, kubeconfig, false));
+  }
+
+  copyHelmCommand(): void {
+    const cmd =
+      'helm -n kbind upgrade --install --create-namespace \\\n' +
+      '  konnector oci://ghcr.io/kbind-dev/charts/konnector-v2:2.0.0-rc7';
+    this.copyToClipboard(cmd, 'Helm command copied to clipboard');
   }
 
   copyBundle(): void {

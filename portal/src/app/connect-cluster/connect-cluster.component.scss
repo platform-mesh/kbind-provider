@@ -8,6 +8,69 @@
   text-align: center;
 }
 
+// ── konnector help banner ──────────────────────────────────────────────────────
+
+.help-panel {
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: var(--sapInformationBackground);
+  border: 1px solid var(--sapInformationBorderColor, #0070f2);
+  overflow: hidden;
+
+  .help-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background: color-mix(in srgb, var(--sapInformationBackground) 80%, var(--sapInformationBorderColor, #0070f2) 20%);
+    }
+  }
+
+  .help-icon {
+    font-size: 1.125rem;
+    flex-shrink: 0;
+    color: var(--sapInformativeTextColor, #0070f2);
+  }
+
+  .help-title {
+    flex: 1;
+    font-weight: 700;
+    font-size: var(--sapFontSize);
+    color: var(--sapInformativeTextColor, #0070f2);
+  }
+
+  .help-toggle-icon {
+    font-size: 0.75rem;
+    color: var(--sapInformativeTextColor, #0070f2);
+    flex-shrink: 0;
+  }
+
+  .help-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid var(--sapInformationBorderColor, #0070f2);
+  }
+
+  .help-code {
+    margin: 0.25rem 0 0;
+    padding: 0.625rem 0.875rem;
+    font-family: monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    background: var(--sapField_Background);
+    border: 1px solid var(--sapField_BorderColor);
+    border-radius: 4px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+}
+
 // ── credentials / info panels ──────────────────────────────────────────────────
 
 .info-panel {
