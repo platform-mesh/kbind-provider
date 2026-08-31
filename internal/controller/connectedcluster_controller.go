@@ -223,41 +223,16 @@ func (r *ConnectedClusterReconciler) handleDeletion(ctx context.Context, c clien
 // reconcileStatus looks up the heartbeat Lease and updates the ConnectedCluster
 // status fields and conditions in place. It does not requeue or return
 // transient errors for missing Leases.
-//
-// When LocalClusterUID is not yet set the konnector's Lease is located via the
-// leaseConnectionIndex (keyed by core.kbind.io/connection == cc.Name), and the
-// UID is read from Lease.spec.holderIdentity so the two paths share the same
-// connected/stale logic below.
 func (r *ConnectedClusterReconciler) reconcileStatus(ctx context.Context, c client.Client, cc *kbpv1alpha1.ConnectedCluster) error {
-	var lease *coordinationv1.Lease
-
-	if cc.Status.LocalClusterUID == "" {
-		found, err := r.findLeaseByConnection(ctx, c, cc.Name)
-		if err != nil {
-			return err
-		}
-		if found == nil || found.Spec.HolderIdentity == nil || *found.Spec.HolderIdentity == "" {
-			cc.Status.LeaseRef = nil
-			setCondition(cc, condConnected, metav1.ConditionFalse, reasonLeaseNotFound, "konnector has not established a heartbeat yet")
-			setCondition(cc, condReady, metav1.ConditionFalse, reasonLeaseNotFound, "konnector has not established a heartbeat yet")
-			return nil
-		}
-		cc.Status.LocalClusterUID = *found.Spec.HolderIdentity
-		lease = found
-	} else {
-		leaseName := "consumer-" + cc.Status.LocalClusterUID
-		found := &coordinationv1.Lease{}
-		err := c.Get(ctx, types.NamespacedName{Namespace: leaseNamespace, Name: leaseName}, found)
-		if apierrors.IsNotFound(err) {
-			cc.Status.LeaseRef = nil
-			setCondition(cc, condConnected, metav1.ConditionFalse, reasonLeaseNotFound, "konnector has not established a heartbeat yet")
-			setCondition(cc, condReady, metav1.ConditionFalse, reasonLeaseNotFound, "konnector has not established a heartbeat yet")
-			return nil
-		}
-		if err != nil {
-			return fmt.Errorf("getting lease %s/%s: %w", leaseNamespace, leaseName, err)
-		}
-		lease = found
+	lease, err := r.findLeaseByConnection(ctx, c, cc.Name)
+	if err != nil {
+		return fmt.Errorf("listing leases in namespace %s: %w", leaseNamespace, err)
+	}
+	if lease == nil {
+		cc.Status.LeaseRef = nil
+		setCondition(cc, condConnected, metav1.ConditionFalse, reasonLeaseNotFound, "konnector has not established a heartbeat yet")
+		setCondition(cc, condReady, metav1.ConditionFalse, reasonLeaseNotFound, "konnector has not established a heartbeat yet")
+		return nil
 	}
 
 	cc.Status.LeaseRef = &kbpv1alpha1.LocalLeaseRef{Namespace: leaseNamespace, Name: lease.Name}
@@ -272,6 +247,7 @@ func (r *ConnectedClusterReconciler) reconcileStatus(ctx context.Context, c clie
 		setCondition(cc, condConnected, metav1.ConditionFalse, reasonLeaseStale, "konnector has not renewed its heartbeat")
 		setCondition(cc, condReady, metav1.ConditionFalse, reasonLeaseStale, "konnector heartbeat is stale")
 	}
+
 	return nil
 }
 
