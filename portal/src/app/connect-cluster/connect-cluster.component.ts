@@ -1,19 +1,22 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import * as LuigiClient from '@luigi-project/client';
-import {
-  ButtonComponent,
-  DynamicPageComponent,
-  DynamicPageTitleComponent,
-  IconComponent,
-  InputComponent,
-  LabelComponent,
-  TextComponent,
-  TitleComponent,
-  ToolbarButtonComponent,
-  ToolbarComponent,
-} from '@ui5/webcomponents-ngx';
 import { forkJoin } from 'rxjs';
 
+import '@ui5/webcomponents/dist/Avatar.js';
+import '@ui5/webcomponents/dist/Bar.js';
+import '@ui5/webcomponents/dist/Button.js';
+import '@ui5/webcomponents/dist/CheckBox.js';
+import '@ui5/webcomponents/dist/Dialog.js';
+import '@ui5/webcomponents/dist/Icon.js';
+import '@ui5/webcomponents/dist/Input.js';
+import '@ui5/webcomponents/dist/Label.js';
+import '@ui5/webcomponents/dist/Link.js';
+import '@ui5/webcomponents/dist/Text.js';
+import '@ui5/webcomponents/dist/Title.js';
+import '@ui5/webcomponents/dist/Toolbar.js';
+import '@ui5/webcomponents/dist/ToolbarButton.js';
+import '@ui5/webcomponents-fiori/dist/DynamicPage.js';
+import '@ui5/webcomponents-fiori/dist/DynamicPageTitle.js';
 import '@ui5/webcomponents-icons/dist/accept.js';
 import '@ui5/webcomponents-icons/dist/add.js';
 import '@ui5/webcomponents-icons/dist/copy.js';
@@ -40,18 +43,7 @@ const K8S_NAME_RE = /^[a-z0-9]([a-z0-9-]{0,251}[a-z0-9])?$/;
 @Component({
   selector: 'app-connect-cluster',
   standalone: true,
-  imports: [
-    DynamicPageComponent,
-    DynamicPageTitleComponent,
-    TitleComponent,
-    LabelComponent,
-    TextComponent,
-    ToolbarComponent,
-    ToolbarButtonComponent,
-    InputComponent,
-    ButtonComponent,
-    IconComponent,
-  ],
+  imports: [],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './connect-cluster.component.html',
   styleUrl: './connect-cluster.component.scss',
