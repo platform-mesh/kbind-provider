@@ -43,7 +43,7 @@
     "@angular/compiler-cli": "^22.0.0",
     "@luigi-project/testing-utilities": "^2.31.0",
     "@types/jasmine": "6.0.0",
-    "jasmine-core": "6.2.0",
+    "jasmine-core": "7.0.2",
     "karma": "6.4.4",
     "karma-chrome-launcher": "3.2.0",
     "karma-coverage": "2.2.1",
