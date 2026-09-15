@@ -40,7 +40,7 @@ spec:
         name: kbind-provider-operator
         registry: ghcr.io/platform-mesh
         component: github.com/platform-mesh/kbind-provider
-        version: "0.0.1"
+        version: "0.0.6"
         resourceName: operator-chart
         values:
           # kcp advertises the virtual-workspace endpoint as
@@ -65,7 +65,7 @@ spec:
         name: kbind-provider-portal
         registry: ghcr.io/platform-mesh
         component: github.com/platform-mesh/kbind-provider
-        version: "0.0.1"
+        version: "0.0.6"
         resourceName: portal-chart
         values:
           httpRoute:
