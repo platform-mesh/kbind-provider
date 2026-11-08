@@ -2,9 +2,9 @@ apiVersion: v2
 name: kbind-provider-portal
 description: Kube Bind Portal - Angular UI for kbind provider
 type: application
-version: 0.0.3
+version: 0.0.4
 appVersion: "0.0.1"
 dependencies:
   - name: common
-    version: 26.10.0
+    version: 26.10.2
     repository: oci://ghcr.io/platform-mesh/helm-charts
