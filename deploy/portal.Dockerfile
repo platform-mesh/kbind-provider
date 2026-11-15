@@ -14,7 +14,7 @@ COPY portal/ .
 # Build the Angular application for production
 RUN npm run build
 
-FROM nginx:alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
+FROM nginx:alpine@sha256:fed7e14be83cbd2661a75cdc5b872d936cf155d46c327084d30b8df19ae88d72
 # Angular 17+ outputs to dist/<project>/browser
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /app/dist/kbind-provider-portal/browser /usr/share/nginx/html
