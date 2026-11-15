@@ -3,3 +3,5 @@
 # ownerless so renovate can auto-merge updates
 go.mod
 go.sum
+portal/package.json
+portal/package-lock.json
