@@ -9,7 +9,7 @@ image:
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag. Defaults to the chart appVersion.
-  tag: "@sha256:51df5be15c2193c9cfbc5cc8731b8bf4c7a4811b6a023b00d7e04ad4adfd20c3"
+  tag: "@sha256:a969f2fbd2fe367badaabfabf4df729b75f2839ef7cb9c698fe6a226b7031ea7"
 
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
