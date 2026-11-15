@@ -34,7 +34,7 @@ spec:
     - flux:
         chart: kbind-provider-operator
         registry: ghcr.io/platform-mesh/kbind-provider/charts
-        version: "0.0.1"
+        version: "0.0.6"
         values:
           # kcp advertises the virtual-workspace endpoint as
           # https://root.kcp.localhost:8443/... which resolves to 127.0.0.1 inside the pod.
@@ -56,7 +56,7 @@ spec:
     - flux:
         chart: kbind-provider-portal
         registry: ghcr.io/platform-mesh/kbind-provider/charts
-        version: "0.0.1"
+        version: "0.0.6"
         values:
           httpRoute:
             enabled: true
