@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/platform-mesh/kbind-provider-portal
   pullPolicy: IfNotPresent
-  tag: "@sha256:8a97b8e60924094fe7cd6fb91abac9acab9ca789804745c279c3f05ad9ed9362"
+  tag: "@sha256:9c9e116ab28226c5c377d8a56cc26807394e1f59e1a64bce284852d2642829a9"
 
 imagePullSecrets: []
 nameOverride: ""
